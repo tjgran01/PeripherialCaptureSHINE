@@ -1,11 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PeripherialCaptureSHINE
@@ -77,6 +71,7 @@ namespace PeripherialCaptureSHINE
         private void beginRecordingButton_Click(object sender, EventArgs e)
         {
             _mRecordingMan = new RecordingManager(recordingList, subjectIdEntry.Text, pathTextBox.Text);
+            _mRecordingMan.StartStreams();
         }
 
         private void endRecordingButton_Click(object sender, EventArgs e)

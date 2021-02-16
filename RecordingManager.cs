@@ -1,114 +1,98 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
-using System.Windows.Forms;
+using System.Threading;
 
 
 namespace PeripherialCaptureSHINE
 {
     class RecordingManager
     {
-        List<string> validSensorsStrams = new List<string>() { "Tobii", "SHIMMER", "Screen Capture", "Audio Output" };
-        List<string> sensorsToRemove = new List<string>();
+        string parID;
+        RecordingDataValidator theValidator;
         List<string> _mRecordingStreams = new List<string>();
+        Dictionary<string, string> recordingFPaths;
+
+        StreamFactory streamFactory = new StreamFactory();
+        Dictionary<string, SensorStream> _mStreams = new Dictionary<string, SensorStream>();
 
         public RecordingManager(List<string> recordingStrings, string parID, string rootFPath)
         {
-            var setSuccess = SetRecordingStreams(recordingStrings);
-            if (setSuccess)
+            theValidator = new RecordingDataValidator(recordingStrings, parID, rootFPath);
+
+            // Create Recording Folders and And Set File names.
+            if (theValidator.CheckValidInputs()) // Once it checks --- it prunes invalid sensors.
             {
-                CreateRecordingFolder(parID, rootFPath);
+                SetParID(parID);
+                SetRecordingStreams(recordingStrings); // So this check should always be up to date.
+                var dirDict = CreateRecordingFolder(parID, rootFPath);
+                SetRecordingFPaths(dirDict);
             }
         }
 
-        private bool SetRecordingStreams(List<string> recordingStrings)
+        #region Setters.        
+        private void SetRecordingStreams(List<string> recordingStrings)
         {
-            foreach (string s in recordingStrings)
-            {
-                if (!validSensorsStrams.Contains(s))
-                {
-                    Console.WriteLine("UNKNOWN SENSOR BEING PASSED TO RECORDING MANAGER: " + s);
-                    var msgResponse = MessageBox.Show("INVALID SENSOR STREAM : " + s + " is being sent to recording manager. This stream will be removed before recording!!!", "STREAM ERROR.", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
-                    if (msgResponse.ToString() == "Cancel")
-                    {
-                        return false;
-                    }
-                    sensorsToRemove.Add(s);
-                }
-            }
-
-            if (sensorsToRemove.Count() > 0)
-            {
-                foreach (string s in sensorsToRemove)
-                {
-                    recordingStrings.Remove(s);
-                }
-            }
-
-            this._mRecordingStreams = recordingStrings;
-            return true;
+            this._mRecordingStreams = theValidator.GetValidRecordingStrings();
         }
 
-        private void CreateRecordingFolder(string parID, string rootFPath)
+
+        private void SetParID(string id)
         {
-            bool idValid = ValidateParameter("ID", parID);
-            bool pathValid = ValidateParameter("root", rootFPath);
-
-            if (idValid && pathValid)
-            {
-                if (_mRecordingStreams.Count > 0)
-                {
-                    DateTime rightNow = DateTime.Now;
-                    string fpath =  rootFPath + "\\" + parID + "\\" +(rightNow.ToString()).Replace('/', '-').Replace(' ', '_').Replace(":", "-") + "\\";
-                    Console.WriteLine(fpath);
-
-                    foreach (string subdir in _mRecordingStreams)
-                    {
-                        Directory.CreateDirectory(@"" + fpath + "\\" + subdir);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Uhm... You haven't selected any valid streams to record, mon ami.", "No Streams Error...", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            this.parID = id;
         }
 
-
-        private bool ValidateParameter(string parameterString, string parameter)
+        private void SetRecordingFPaths(Dictionary<string, string> dirDict)
         {
-            if (parameterString == "ID")
+            Dictionary<string, string> fileDict = new Dictionary<string, string>();
+            foreach (KeyValuePair<string, string> entry in dirDict)
             {
-                if (parameter != "0000")
-                {
-                    Console.WriteLine("All Good --- Participant ID " + parameter +  " is valid.");
-                    return true;
-                }
-                else
-                {
-                    MessageBox.Show("Please enter a participant ID!", "ID Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return false;
-                }
+                Console.WriteLine(entry.Key);
+                Console.WriteLine(entry.Value);
+
+                fileDict[entry.Key] = entry.Value + "\\" + parID + "_" + entry.Key;
             }
-            else if (parameterString == "root")
-            {
-                if (Directory.Exists(parameter))
-                {
-                    Console.WriteLine("All Good --- Directory: " + parameter + " Exists.");
-                    return true;
-                }
-                else
-                {
-                    MessageBox.Show("Please enter a Valid Root Directory!", "Root Directory Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return false;
-                }
-            }
-            else
-            {
-                return false;
-            }
-           
+
+            this.recordingFPaths = fileDict;
         }
+        #endregion
+
+        #region Getters
+        private string GetSensorFPath(string key)
+        {
+            return this.recordingFPaths[key];
+        }
+        #endregion
+
+
+        private Dictionary<string, string> CreateRecordingFolder(string parID, string rootFPath)
+        {
+            DateTime rightNow = DateTime.Now;
+            string fpath = rootFPath + "\\" + parID + "\\" + (rightNow.ToString()).Replace('/', '-').Replace(' ', '_').Replace(":", "-") + "\\";
+            Console.WriteLine(fpath);
+
+            Dictionary<string, string> dirDict = new Dictionary<string, string>();
+            foreach (string subdir in _mRecordingStreams)
+            {
+                Directory.CreateDirectory(@"" + fpath + "\\" + subdir);
+                dirDict[subdir] = @"" + fpath + "\\" + subdir;
+            }
+
+            return dirDict;
+        }
+
+        public void StartStreams()
+        {
+            foreach (KeyValuePair<string, string> entry in recordingFPaths)
+            {
+                SensorStream mStream = streamFactory.GetStreamOfType(entry.Key);
+                mStream.CreateFile(entry.Value);
+                Thread sensorThread = new Thread(() => mStream.StartStream());
+                sensorThread.IsBackground = true;
+                sensorThread.Start();
+                _mStreams.Add(entry.Key, mStream);
+            }
+        }
+        
     }
 }

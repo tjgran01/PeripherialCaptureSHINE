@@ -46,6 +46,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AudioCaptureStream.cs" />
+    <Compile Include="DefaultTextDataStream.cs" />
+    <Compile Include="ScreenCaptureStream.cs" />
+    <Compile Include="ShimmerStream.cs" />
+    <Compile Include="TobiiStream.cs" />
+    <Compile Include="StreamFactory.cs" />
+    <Compile Include="SensorStream.cs" />
+    <Compile Include="RecordingDataValidator.cs" />
     <Compile Include="RecordingManager.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
