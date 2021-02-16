@@ -34,7 +34,6 @@ namespace PeripherialCaptureSHINE
         string rootFolderButtonText = "Select Root Folder";
 
 
-
         List<string> recordingList = new List<string>();
         RecordingManager _mRecordingMan;
 
@@ -72,18 +71,16 @@ namespace PeripherialCaptureSHINE
 
             this.rootFolderLabel.Text = rootFolderLabelText;
             this.fileBroswerButton.Text = rootFolderButtonText;
-            this.pathTextBox.Text = @"C:\";
+            this.pathTextBox.Text = @"C:";
         }
 
         private void beginRecordingButton_Click(object sender, EventArgs e)
         {
-            Console.WriteLine("Hello");
-            _mRecordingMan = new RecordingManager(recordingList);
+            _mRecordingMan = new RecordingManager(recordingList, subjectIdEntry.Text, pathTextBox.Text);
         }
 
         private void endRecordingButton_Click(object sender, EventArgs e)
         {
-            Console.WriteLine("Goodbye");
             this.Close();
         }
 
@@ -112,7 +109,6 @@ namespace PeripherialCaptureSHINE
         {
             this.isShimmer = this.shimmerCheckBox.Checked;
             UpdateRecordingList(isShimmer, "SHIMMER");
-            UpdateRecordingList(isShimmer, "SHIMMER-33");
         }
 
         private void tobiiCheckBox_CheckedChanged(object sender, EventArgs e)
