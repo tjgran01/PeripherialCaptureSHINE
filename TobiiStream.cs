@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System;
+using Tobii.Research;
 
 
 namespace PeripherialCaptureSHINE
@@ -8,6 +9,11 @@ namespace PeripherialCaptureSHINE
     {
         const string fileEx = ".txt";
         string _mFName;
+
+        public TobiiStream()
+        {
+
+        }
 
         public void SetStreamParameters()
         {
